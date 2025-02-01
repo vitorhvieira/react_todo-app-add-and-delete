@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Todo } from './types/Todo';
 import { ErrorsType } from './types/Error';
 import { Filter } from './types/Filter';
@@ -20,7 +20,7 @@ export const App: React.FC = () => {
   const inputAddRef = useRef<HTMLInputElement>(null);
   const completedTodos = todos.filter(todo => todo.completed).length;
 
-  const loadTodos = async () => {
+  const loadTodos = useCallback(async () => {
     try {
       const response = await getTodos();
 
@@ -28,7 +28,7 @@ export const App: React.FC = () => {
     } catch (error) {
       setErrorMessage(ErrorsType.LoadTodos);
     }
-  };
+  }, []);
 
   const addTodo = async (todoTitle: string) => {
     setTempTodo({ id: 0, title: todoTitle, completed: false, userId: USER_ID });
