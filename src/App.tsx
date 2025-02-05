@@ -14,7 +14,7 @@ export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [errorMessage, setErrorMessage] = useState<ErrorsType | null>(null);
   const [filterBy, setFilterBy] = useState(Filter.All);
-  const [tempTodo, setTempTodo] = useState<Todo | null>();
+  const [tempTodo, setTempTodo] = useState<Todo | null>(null);
   const [loadingIds, setLoadingIds] = useState<number[]>([]);
 
   const inputAddRef = useRef<HTMLInputElement>(null);
@@ -46,7 +46,7 @@ export const App: React.FC = () => {
     }
   };
 
-  const deletTodo = async (id: number) => {
+  const deleteTodo = async (id: number) => {
     setLoadingIds(prev => [...prev, id]);
 
     try {
@@ -63,21 +63,28 @@ export const App: React.FC = () => {
   };
 
   const clearCompleted = async () => {
-    const iscompletedTodos = todos.filter(todo => todo.completed);
+    const IsCompletedTodos = todos.filter(todo => todo.completed);
 
-    for (const todo of iscompletedTodos) {
-      try {
-        await removeTodo(todo.id);
-        setTodos(prev => prev.filter(t => t.id !== todo.id));
-      } catch (error) {
-        setErrorMessage(ErrorsType.DeleteTodo);
-      }
-    }
+    const deletePromises = IsCompletedTodos.map(todo =>
+      removeTodo(todo.id)
+        .then(() => todo.id)
+        .catch(() => {
+          setErrorMessage(ErrorsType.DeleteTodo);
+
+          return null;
+        }),
+    );
+
+    const deletedIds = (await Promise.all(deletePromises)).filter(
+      id => id !== null,
+    ) as number[];
+
+    setTodos(prev => prev.filter(todo => !deletedIds.includes(todo.id)));
   };
 
   useEffect(() => {
     loadTodos();
-  }, []);
+  }, [loadTodos]);
 
   if (!USER_ID) {
     return <UserWarning />;
@@ -103,7 +110,7 @@ export const App: React.FC = () => {
 
         <TodoList
           preparedTodos={prepared}
-          onRemoveTodo={deletTodo}
+          onRemoveTodo={deleteTodo}
           loading={loadingIds}
           tempTodo={tempTodo}
         />
